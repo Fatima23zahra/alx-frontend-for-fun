@@ -1,64 +1,66 @@
 #!/usr/bin/python3
-"""
-This is a script to convert a Markdown file to HTML.
+import sys
+from os.path import exists
 
-Usage:
-    ./markdown2html.py [input_file] [output_file]
+"""A markdown to html file
+    Args:
+        Arg 1: Markdown file
+        Arg 2: output file name (HTML)
+    """
 
-Arguments:
-    input_file: the name of the Markdown file to be converted
-    output_file: the name of the output HTML file
+markdownHeader = {'#': '<h1> </h1>', '##': '<h2> </h2>', '###': '<h3> </h3>',
+                  '####': '<h4> </h4>', '#####': '<h5> </h5>', '######': '<h6> </h6>'}
 
-Example:
-    ./markdown2html.py README.md README.html
-"""
-
-import argparse
-import pathlib
-import re
-
-
-def convert_md_to_html(input_file, output_file):
-    '''
-    Converts markdown file to HTML file
-    '''
-    # Read the contents of the input file
-    with open(input_file, encoding='utf-8') as f:
-        md_content = f.readlines()
-
-    html_content = []
-    for line in md_content:
-        # Check if the line is a heading
-        match = re.match(r'(#){1,6} (.*)', line)
-        if match:
-            # Get the level of the heading
-            h_level = len(match.group(1))
-            # Get the content of the heading
-            h_content = match.group(2)
-            # Append the HTML equivalent of the heading
-            html_content.append(f'<h{h_level}>{h_content}</h{h_level}>\n')
-        else:
-            html_content.append(line)
-
-    # Write the HTML content to the output file
-    with open(output_file, 'w', encoding='utf-8') as f:
-        f.writelines(html_content)
-
+markdownList = {'-': '<li> </li>', '*': '<li> </li>'}
 
 if __name__ == '__main__':
-    # Parse command-line arguments
-    parser = argparse.ArgumentParser(description='Convert markdown to HTML')
-    parser.add_argument('input_file', help='path to input markdown file')
-    parser.add_argument('output_file', help='path to output HTML file')
-    args = parser.parse_args()
 
-    # Check if the input file exists
-    input_path = pathlib.Path(args.input_file)
-    if not input_path.is_file():
-        print(f'Missing {input_path}', file=sys.stderr)
-        sys.exit(1)
+    """Check if number of arguments == 2"""
 
-    # Convert the markdown file to HTML
-    convert_md_to_html(args.input_file, args.output_file)
+    if len(sys.argv) != 3:
+        sys.stderr.write("Usage: ./markdown2html.py README.md README.html\n")
+        exit(1)
 
+    """Check if input file is a correct markdown file"""
+    if "." in sys.argv[1]:
+        newArr = sys.argv[1].split('.')
+        if len(newArr) != 2:
+            sys.stderr.write('Bad Markdown file\n')
+            exit(1)
+        if newArr[1] != "md":
+            sys.stderr.write('First argument must a markdown file\n')
 
+    """Check if markdown file exist"""
+    if exists(sys.argv[1]) == False:
+        sys.stderr.write('Missing {}\n'.format(sys.argv[1]))
+        exit(1)
+
+    """Opening the markdown file for file operations"""
+    ulCount = 0
+    with open(sys.argv[1]) as markdown:
+        line = True
+
+        while line:
+            line = markdown.readline()
+            if line.startswith('#'):  # Headings operation
+                hash = line.split(' ')[0]
+
+                with open(sys.argv[2], 'a') as htmlFile:
+                    hashL = len(hash) + 1
+                    htmlFile.write('{}{}{}\n'.format(
+                        markdownHeader[hash].split(' ')[0], line[hashL: -1], markdownHeader[hash].split(' ')[1]))
+
+            if line.startswith('-'):  # Unordered list operation
+                with open(sys.argv[2], 'a') as htmlFile:
+                    if ulCount == 0:
+                        htmlFile.write('<ul>\n')
+                    else:
+                        htmlFile.write('\t{}{}{}\n'.format(
+                            markdownList['-'].split(' ')[0], line[2: -1], markdownList['-'].split(' ')[1]))
+                    ulCount += 1
+
+            else:
+                with open(sys.argv[2], 'a') as htmlFile:
+                    htmlFile.write(line)
+
+    exit(0)
